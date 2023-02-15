@@ -1,0 +1,297 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Rasterizer</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2023</h1>
+<h1 align="middle">Project 1: Rasterizer</h1>
+<h2 align="middle">Nathan Dyre, Alan Chiem</h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p> This project goes over some sampling and anti-aliasing techniques and is broken down into two sections. The first three sections
+  are on rasterization while each of the last three sections provide an additional upgrade that can improve image quality.
+</p>
+  <br>
+  <p>
+  1: Drawing Single-Color Triangles
+    <br>
+  2: Antialiasing by Supersampling
+    <br>
+  3: Transforms
+    <br>
+  4: Barycentric coordinates
+    <br>
+  5: "Pixel sampling" for texture mapping
+    <br>
+  6: "Level sampling" with mipmaps for texture mapping
+  </p>
+  <br>
+  <p> After completing this project, we were able to get a behind-the-scenes look on how images are generated and the various complexity of it all.
+  The concepts that we've implemented in this project will always be in the back of our minds everytime we see something beautiful on a screen.</p>
+<!--Give a high-level overview of what you implemented in this project. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the project. -->
+<h2 align="middle">Section I: Rasterization</h2>
+
+<h3 align="middle">Part 1: Rasterizing single-color triangles</h3>
+
+  <p>
+    To rasterize triangles, we create a function (l) to determine whether a sample point is within a triangle or not. If it is, we color it
+    using the provided function, rasterize_point. (The l function was derived from lecture.)
+    <br>
+    <br>
+    The sample points are evenly spread out across the image with each point located at the center of a pixel.
+    <br>
+    <br>
+    We can also optimize this task by only checking sample points within the bounding box of the triangle. We do this by only looping through
+    points that are within the min X and max X values between the three vertexes and similarly so with the min Y and max Y values.
+  </p>
+
+
+<!--  <p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>-->
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <!-- Edited to include image of test4 with zoom-->
+        <img src="images/task2-sr1.png" align="middle" width="400px"/>
+        <figcaption align="middle">Rasterization with a zoom on an aliasing effect.</figcaption>
+      </td>
+<!--      <td>-->
+<!--        <img src="images/image2.png" align="middle" width="400px"/>-->
+<!--        <figcaption align="middle">Caption goes here.</figcaption>-->
+<!--      </td>-->
+    </tr>
+  </table>
+</div>
+
+
+<h3 align="middle">Part 2: Antialiasing triangles</h3>
+
+  <p>
+  With supersampling, we can smooth out high-frequency areas by just having more samples.
+  <br>
+  <br>
+  Instead of only sampling the center of each pixel, we now sample a multitude of points per pixel. We use the same l function from earlier to
+  determine whether each point is within the triangle. Then, we take the average number of points to color the pixel accordingly. For example,
+  a pixel that has every point within the triangle will have a more prominent color than a pixel that only has one sample point within the triangle.
+  <br>
+  <br>
+  The sample points are evenly spaced within each pixel. We can do this by adding in two more for loops.
+  If the sample rate is n, we position our first sample point at (x + 1/(sqrt(n) * 2), y + 1/(sqrt(n) * 2)). Then we increase the x and y value
+  by 1/(sqrt(n) for each new point in both the x and y direction.
+  For instance, a sample rate of 4 would mean 4 sample points within one pixel. (x + 1/4, y + 1/4) (x + 1/4, y + 3/4) (x + 3/4, y + 1/4) (x + 3/4, y + 3/4)
+  <br>
+  <br>
+  With a higher sampling rate, we are able to create a more accurate representation of the image because each pixel is provided with more information
+  through more sample points. This creates a smoother transition along fast-changing areas such as skinny triangle corners.
+  </p>
+
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <!-- Edited to include image of test4 with zoom-->
+          <img src="images/task2-sr1.png" align="middle" width="400px"/>
+          <figcaption align="middle">Supersampling with sample rate 1.</figcaption>
+        </td>
+        <td>
+          <img src="images/task2-sr4.png" align="middle" width="400px"/>
+          <figcaption align="middle">Supersampling with sample rate 4.</figcaption>
+        </td>
+      </tr>
+      <br>
+      <tr>
+        <td>
+          <img src="images/task2-sr16.png" width="400px"/>
+          <figcaption align="middle">Supersampling with sample rate 16.</figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+<h3 align="middle">Part 3: Transforms</h3>
+
+  <p>
+  For this task, we implemented transformation matrices. (translate, scale, and rotate)
+  </p>
+
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="images/task3-ogcubeman.png" width="400px"/>
+          <figcaption align="middle">The og cubeman.</figcaption>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="images/task3-ninja.png" width="400px"/>
+          <figcaption align="middle">Cubeman doing a ninja kick.</figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+
+<h2 align="middle">Section II: Sampling</h2>
+
+<h3 align="middle">Part 4: Barycentric coordinates</h3>
+
+  <p>For this task, we utilized barycentric coordinates for the purpose of a smoother coloring effect as seen in the picture of the RGB triangle.
+    The values α, β, and γ are used as weights to determine the intensity of a point. We can use this idea of intensity for a variety of applications
+    such as coloring and positioning (seen in this task) and also texturing (seen in task 5 and 6).
+    <br>
+    <br>
+    α, β, and γ must satisfy the following where A, B, and C are vertices of a triangle and V is a point that we are observing:
+    <br>
+    <br>
+    V = αA + βB + γC
+    <br>
+    α + β + γ = 1
+    <br>
+    <br>
+    If α, β, and γ do not add up to 1, then we know that the point lies outside the triangle.
+
+  </p>
+
+
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="images/task4-triangle.png" align="middle" width="400px"/>
+          <figcaption align="middle">An RGB triangle with a smooth color gradient. </figcaption>
+        </td>
+        <td>
+          <img src="images/task4.png" align="middle" width="400px"/>
+          <figcaption align="middle">svg/basic/test7.svg (Color wheel)</figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+
+<h3 align="middle">Part 5: "Pixel sampling" for texture mapping</h3>
+  <p>
+    Pixel sampling is a way to map textures onto corresponding pixels. In this task, we implemented two types of pixel sampling: nearest and bilinear.
+    <br>
+    <br>
+    Nearest sampling sets the color of the pixel to whatever the nearest texel is. We used the round function on the x and y coordinates to accomplish this. This method is faster than bilinear sampling but results in having more high-frequency changes.
+    <br>
+    <br>
+    Bilinear sampling takes a weighted average of the four nearest texels and computes a color that is relative to those pixels. As seen in the zoomed image of Florida, we can see the difference between nearest and bilinear pixel sampling when looking at the white longitude line. With bilinear sampling, the line is much smoother and doesn't have many places where colors change quickly.
+  </p>
+
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="images/task5-nearest-sr1.png" align="middle" width="400px"/>
+          <figcaption align="middle">nearest with sample rate 1 </figcaption>
+        </td>
+        <td>
+          <img src="images/task5-nearest-sr16.png" align="middle" width="400px"/>
+          <figcaption align="middle">nearest with sample rate 16</figcaption>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="images/task5-bilinear-sr1.png" align="middle" width="400px"/>
+          <figcaption align="middle">bilinear with sample rate 1</figcaption>
+        </td>
+        <td>
+          <img src="images/task5-bilinear-sr16.png" align="middle" width="400px"/>
+          <figcaption align="middle">bilinear with sample rate 16</figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+
+  <h3 align="middle">Part 6: "Level sampling" with mipmaps for texture mapping</h3>
+
+<p>
+  Mipmaps are copies of an image at various resolutions. Level 0 is the original image and each next level refers to a lower resolution image. By using a lower resolution copy, we are effectively filtering/blurring an image then sampling from it. This will result in a faster computation and in some cases a better image output.
+  <br>
+  <br>
+  We choose the nearest level to sample from based on a function derived from lecture. We can also do a bilinear interpolation between the nearest level and the one above it.
+  <br>
+  <br>
+  We now have three approaches to prevent aliasing effects: pixel sampling, level sampling, and super sampling.
+  <br>
+  <br>
+  Super sampling at a higher rate will always show an improvement in image quality but the tradeoff is that it takes a high amount of memory/computation.
+  <br>
+  <br>
+  Between the two types of pixel sampling, nearest sampling will be faster than bilinear but bilinear will have a greater antialiasing power because it computes a more accurate color based on its positioning.
+  <br>
+  <br>
+  For leveling sampling we touched on three methods: sampling at level 0, sampling at the nearest level, and using bilinear level sampling. However, it is not always clear which method provides the best image. In terms of memory, we would need to increase our memory usage to 4/3 to store all the additional levels in a mipmap.
+</p>
+
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="images/task6_L0_np.png" align="middle" width="400px"/>
+          <figcaption align="middle">Level 0 with nearest pixel sampling</figcaption>
+        </td>
+        <td>
+          <img src="images/task6_L0_bp.png" align="middle" width="400px"/>
+          <figcaption align="middle">Level 0 with bilinear pixel sampling</figcaption>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="images/task6_nl_np.png" align="middle" width="400px"/>
+          <figcaption align="middle">Nearest level with nearest pixel sampling</figcaption>
+        </td>
+        <td>
+          <img src="images/task6_nl_bp.png" align="middle" width="400px"/>
+          <figcaption align="middle">Nearest level with bilinear pixel sampling</figcaption>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <img src="images/task6_bl_np.png" align="middle" width="400px"/>
+          <figcaption align="middle">Bilinear level interpolation with nearest pixel sampling</figcaption>
+        </td>
+        <td>
+          <img src="images/task6_bl_bp.png" align="middle" width="400px"/>
+          <figcaption align="middle">Bilinear level interpolation with bilinear pixel sampling</figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+<!--<h2 align="middle">Section III: Art Competition</h2>-->
+<!--<p>If you are not participating in the optional art competition, don't worry about this section!</p>-->
+
+<!--<h3 align="middle">Part 7: Draw something interesting!</h3>-->
+
+</body>
+</html>
